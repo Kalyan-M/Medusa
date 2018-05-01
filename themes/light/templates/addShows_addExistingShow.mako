@@ -26,7 +26,7 @@ const startVue = () => {
                 defaultIndexer: ${app.INDEXER_DEFAULT},
 
                 isLoading: false,
-                lastRootDirText: '',
+                rawRootDirs: [],
                 selectedRootDirs: [],
                 dirList: [],
                 promptForSettings: false
@@ -39,29 +39,12 @@ const startVue = () => {
                 $.updateBlackWhiteList(undefined);
             });
 
-            $(document.body).on('change', '#rootDirText', () => {
-                if (this.lastRootDirText === $('#rootDirText').val()) {
-                    return false;
-                }
-                this.lastRootDirText = $('#rootDirText').val();
-                this.selectedRootDirs = this.rootDirs;
-                this.update();
-            });
-
-            // Trigger Root Dirs to update.
-            // @FIXME: This is a workaround until root-dirs is a Vue component.
-            if ($('#rootDirText').val() === '') {
-                $('#rootDirs').click();
-            }
-
-            // this.lastRootDirText = $('#rootDirText').val();
-            // this.selectedRootDirs = this.rootDirs;
-            // this.update();
+            this.selectedRootDirs = this.rootDirs;
+            this.update();
         },
         computed: {
             rootDirs() {
-                if (!this.lastRootDirText) return [];
-                return this.lastRootDirText.split('|').slice(1);
+                return this.rootDirs.map(rd => rd.path);
             },
             filteredDirList() {
                 return this.dirList.filter(dir => !dir.alreadyAdded);
@@ -79,7 +62,7 @@ const startVue = () => {
             checkAll: {
                 get() {
                     const selectedSeriesDirs = this.filteredDirList.filter(dir => dir.selected);
-                    if (!selectedSeriesDirs) return false;
+                    if (selectedSeriesDirs.length === 0) return false;
                     return selectedSeriesDirs.length === this.filteredDirList.length;
                 },
                 set(newValue) {
@@ -95,7 +78,7 @@ const startVue = () => {
                 if (this.isLoading) return;
 
                 this.isLoading = true;
-                if (!this.selectedRootDirs) {
+                if (this.selectedRootDirs.length === 0) {
                     this.dirList = [];
                     this.isLoading = false;
                     return;
@@ -163,6 +146,10 @@ const startVue = () => {
             }
         },
         watch: {
+            rootDirs() {
+                this.selectedRootDirs = this.rootDirs;
+                this.update();
+            },
             selectedRootDirs() {
                 this.update();
             }
@@ -184,7 +171,7 @@ const startVue = () => {
                         <li><app-link href="addShows/existingShows/#tabs-2">Customize Options</app-link></li>
                     </ul>
                     <div id="tabs-1" class="existingtabs">
-                        <%include file="/inc_rootDirs.mako"/>
+                        <root-dirs @update:root-dirs="rawRootDirs = $event" />
                     </div>
                     <div id="tabs-2" class="existingtabs">
                         <%include file="/inc_addShowOptions.mako"/>
